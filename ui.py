@@ -350,10 +350,51 @@ class ComparaisonPage(QWidget):
         main_layout = QVBoxLayout()
         self.setLayout(main_layout)
 
-        self.openFilesButton = QPushButton("Ouvrir un/des fichiers FITS 1D")
-        self.openFilesButton.setIcon(QIcon("icons/open_file.png"))
-        self.openFilesButton.clicked.connect(self.open_files)
-        main_layout.addWidget(self.openFilesButton)
+        # barre de menu
+        self.menu_bar = QMenuBar(self)
+
+        # menu "File"
+        file_menu = QMenu("Fichier", self)
+        self.menu_bar.addMenu(file_menu)
+
+        # menu "Options"
+        options_menu = QMenu("Options", self)
+        self.menu_bar.addMenu(options_menu)
+
+
+        # actions du menu "File"
+        self.open_file_action = file_menu.addAction("Ouvrir des FITS 1D")
+        #self.open_file_action.setCheckable(True)
+        self.open_file_action.triggered.connect(self.open_files)
+
+
+        # actionsd du menu "Options"
+        self.choix_couleur_fond_action = options_menu.addAction("Couleur du background")
+        self.choix_couleur_fond_action.setCheckable(True)
+        self.choix_couleur_fond_action.triggered.connect(self.choose_background_color)
+
+        self.choix_couleur_axe_action = options_menu.addAction("Couleur des axes")
+        self.choix_couleur_axe_action.setCheckable(True)
+        self.choix_couleur_axe_action.triggered.connect(self.choose_axis_color)
+
+        self.choix_width_action = options_menu.addAction("Epaisseur des traits")
+        self.choix_width_action.setCheckable(True)
+        self.choix_width_action.triggered.connect(self.choose_line_thickness)
+
+        self.remove_atmo_action = options_menu.addAction("Retirer les raies atmos")
+        self.remove_atmo_action.setCheckable(True)
+        #self.remove_atmo_action.triggered.connect(self.remove_atmo_action)
+
+
+
+        # Ajouter la barre de menu au layout principal
+        main_layout.setMenuBar(self.menu_bar)
+
+
+        # self.openFilesButton = QPushButton("Ouvrir un/des fichiers FITS 1D")
+        # self.openFilesButton.setIcon(QIcon("icons/open_file.png"))
+        # self.openFilesButton.clicked.connect(self.open_files)
+        # main_layout.addWidget(self.openFilesButton)
 
         self.splitter = QSplitter(Qt.Horizontal)
         main_layout.addWidget(self.splitter, 1)
@@ -366,17 +407,17 @@ class ComparaisonPage(QWidget):
         side_widget.setLayout(side_layout)
         self.splitter.addWidget(side_widget)
 
-        self.bg_color_button = QPushButton("Choisir couleur de fond")
-        side_layout.addWidget(self.bg_color_button)
-        self.bg_color_button.clicked.connect(self.choose_background_color)
+        # self.bg_color_button = QPushButton("Choisir couleur de fond")
+        # side_layout.addWidget(self.bg_color_button)
+        # self.bg_color_button.clicked.connect(self.choose_background_color)
 
-        self.axis_color_button = QPushButton("Choisir couleur des axes")
-        side_layout.addWidget(self.axis_color_button)
-        self.axis_color_button.clicked.connect(self.choose_axis_color)
+        # self.axis_color_button = QPushButton("Choisir couleur des axes")
+        # side_layout.addWidget(self.axis_color_button)
+        # self.axis_color_button.clicked.connect(self.choose_axis_color)
 
-        self.line_thickness_button = QPushButton("Choisir épaisseur des traits")
-        side_layout.addWidget(self.line_thickness_button)
-        self.line_thickness_button.clicked.connect(self.choose_line_thickness)
+        # self.line_thickness_button = QPushButton("Choisir épaisseur des traits")
+        # side_layout.addWidget(self.line_thickness_button)
+        # self.line_thickness_button.clicked.connect(self.choose_line_thickness)
 
         self.graph_comp_Widget.setBackground("w")
         self.axis_pen_color = "k"
@@ -428,7 +469,7 @@ class ComparaisonPage(QWidget):
 
             for i, file_name in enumerate(file_names):
                 try:
-                    wavelength, spectrum, title, hd_number,obj_name, date_obs = self.data_processor.process_file(file_name)
+                    wavelength, spectrum, title, hd_number,obj_name, date_obs, resolution = self.data_processor.process_file(file_name)
                     color = self.colors[i % len(self.colors)]
                     self.plot_spectrum(wavelength, spectrum, color, obj_name, date_obs)
                 except Exception as e:
@@ -443,3 +484,4 @@ class ComparaisonPage(QWidget):
         self.plots.append((plot_item, color))
         self.graph_comp_Widget.setLabel("left", "Intensité")
         self.graph_comp_Widget.setLabel("bottom", 'Longueur d\'onde [Å]')
+
