@@ -1,0 +1,69 @@
+QPushButton {
+    border-radius: 8px;  /* Coins légèrement arrondis */
+    border: 1px solid #4CAF50;  /* Bordure fine verte */
+    background-color: #ffffff;  /* Fond blanc pour un style minimaliste */
+    color: #4CAF50;  /* Texte vert pour correspondre à la bordure */
+    font-size: 16px;  /* Taille de police légèrement réduite */
+    padding: 10px 15px;  /* Moins de padding pour un bouton plus mince */
+    font-weight: normal;  /* Texte plus léger */
+}
+
+QPushButton:hover {
+    background-color: #4CAF50;  /* Fond vert au survol */
+    color: #ffffff;  /* Texte blanc au survol */
+    border-color: #45A049;  /* Bordure légèrement plus foncée au survol */
+}
+
+QPushButton:pressed {
+    background-color: #388E3C;  /* Fond vert plus sombre lorsqu'il est pressé */
+    border-color: #388E3C;  /* Bordure assortie lorsqu'il est pressé */
+    color: #ffffff;  /* Texte blanc lorsqu'il est pressé */
+}
+QMenuBar {
+    background-color: #ffffff;  /* Fond blanc pour la barre de menu */
+    color: #4CAF50;  /* Texte vert pour correspondre aux boutons */
+    font-size: 16px;  /* Taille de police */
+    padding: 5px;  /* Padding léger */
+    border-bottom: 1px solid #dcdcdc;  /* Fine bordure en bas pour délimiter la barre */
+}
+
+QMenuBar::item {
+    background-color: transparent;  /* Fond transparent par défaut */
+    padding: 5px 10px;  /* Padding pour une zone cliquable confortable */
+    margin: 0px;  /* Pas d'espacement entre les éléments */
+}
+
+QMenuBar::item:selected {  /* Style pour l'élément survolé */
+    background-color: #e0e0e0;  /* Fond gris léger lors du survol */
+    border-radius: 5px;  /* Coins légèrement arrondis lors du survol */
+}
+
+QMenuBar::item:pressed {  /* Style pour l'élément pressé */
+    background-color: #c8e6c9;  /* Fond vert pâle lors de la pression */
+    border-radius: 5px;  /* Coins légèrement arrondis */
+}
+
+QMenu {
+    background-color: #ffffff;  /* Fond blanc pour le menu déroulant */
+    border: 1px solid #dcdcdc;  /* Bordure légère et discrète autour du menu */
+    color: #333;  /* Texte noir pour les éléments du menu */
+    font-size: 14px;  /* Taille de police légèrement plus petite */
+    padding: 5px;  /* Padding autour des éléments du menu */
+}
+
+QMenu::item {
+    background-color: transparent;  /* Fond transparent par défaut */
+    padding: 5px 20px;  /* Padding pour une zone cliquable confortable */
+    margin: 2px 0px;  /* Espacement vertical entre les éléments */
+}
+
+QMenu::item:selected {  /* Style pour l'élément de menu survolé */
+    background-color: #e0e0e0;  /* Fond gris léger lors du survol */
+    color: #4CAF50;  /* Texte vert lors du survol pour correspondre aux boutons */
+    border-radius: 3px;  /* Coins légèrement arrondis pour les éléments survolés */
+}
+
+QMenu::item:pressed {  /* Style pour l'élément de menu pressé */
+    background-color: #c8e6c9;  /* Fond vert pâle lors de la pression */
+    border-radius: 3px;  /* Coins légèrement arrondis */
+}
