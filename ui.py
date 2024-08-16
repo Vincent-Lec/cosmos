@@ -93,12 +93,6 @@ class MainWindow(QMainWindow):
         btn_layout.addWidget(quick_compare_btn)
         home_layout.addLayout(btn_layout)
 
-        # # Ajouter une image ou un logo (facultatif)
-        # logo = QLabel()
-        # logo.setPixmap(QPixmap("images/logo.png").scaled(200, 200, Qt.KeepAspectRatio))
-        # logo.setAlignment(Qt.AlignCenter)
-        # home_layout.addWidget(logo)
-
         # Ajouter des informations sur la version et l'auteur
         footer = QLabel("Version 0.1 - Développé par V. Lecocq")
         footer.setAlignment(Qt.AlignCenter)
@@ -165,7 +159,6 @@ class ImagePage(QWidget):
                 QMessageBox.critical(self, "Erreur", str(e))
 
 
-from PySide6.QtWidgets import QMenuBar, QMenu
 
 class GraphPage(QWidget):
     def __init__(self):
@@ -199,21 +192,30 @@ class GraphPage(QWidget):
         self.balmer_lines_action.setCheckable(True)
         self.balmer_lines_action.triggered.connect(self.toggle_balmer_lines)
 
-        # self.hd_spectrum_hr_action = options_menu.addAction("Superposer le spectre Melchiors HR")
-        # self.hd_spectrum_hr_action.setCheckable(True)
-        # self.hd_spectrum_hr_action.triggered.connect(self.toggle_hd_spectrum_hr)
-
-        # self.hd_spectrum_br_action = options_menu.addAction("Superposer le spectre Melchiors BR")
-        # self.hd_spectrum_br_action.setCheckable(True)
-        # self.hd_spectrum_br_action.triggered.connect(self.toggle_hd_spectrum_br)
-
         self.melchiors_spectrum_action = options_menu.addAction("Superposer le spectre Melchiors")
         self.melchiors_spectrum_action.setCheckable(True)
         self.melchiors_spectrum_action.triggered.connect(self.toggle_melchiors_spectrum)
 
-        self.remove_atmo_action = options_menu.addAction("Retirer les raies atmosphériques")
+        # Sous-menu pour les raies atmosphériques
+        atmo_menu = QMenu("Raies atmosphériques", self)
+        options_menu.addMenu(atmo_menu)
+
+        self.remove_atmo_action = atmo_menu.addAction("Afficher sans les raies")
         self.remove_atmo_action.setCheckable(True)
         self.remove_atmo_action.triggered.connect(self.toggle_remove_atmo)
+
+        self.show_both_spectra_action = atmo_menu.addAction("Afficher les deux spectres")
+        self.show_both_spectra_action.setCheckable(True)
+        self.show_both_spectra_action.triggered.connect(self.toggle_show_both_spectra)
+
+        self.show_baseline_action = atmo_menu.addAction("Afficher la ligne de base")
+        self.show_baseline_action.setCheckable(True)
+        self.show_baseline_action.triggered.connect(self.toggle_show_baseline)
+
+        self.show_telluric_lines_action = atmo_menu.addAction("Afficher les raies telluriques")
+        self.show_telluric_lines_action.setCheckable(True)
+        self.show_telluric_lines_action.triggered.connect(self.toggle_show_telluric_lines)
+
 
         # Ajouter la barre de menu au layout principal
         main_layout.setMenuBar(self.menu_bar)
@@ -239,6 +241,13 @@ class GraphPage(QWidget):
         self.balmer_lines_items = []
         self.hd_spectrum_item = None
 
+        self.telluric_lines = [
+            6508.603, 6511.999, 6512.242, 6514.727, 6516.437, 6516.543, 6516.625, 6519.467, 
+            6523.850, 6532.459, 6534.000, 6534.014, 6536.726, 6542.317, 6543.912, 6547.705,
+            6548.627, 6552.632, 6557.181, 6558.149, 6560.501, 6564.208, 6568.806, 6572.087, 
+            6574.860, 6580.794, 6586.559, 6594.375, 6599.365, 6605.566, 6612.550
+        ]
+
         # Configurer le style du graphe
         self.graphWidget.setBackground('w')
         self.graphWidget.getAxis('left').setPen('k')
@@ -254,6 +263,8 @@ class GraphPage(QWidget):
         if file_name:
             try:
                 wavelength, spectrum, title, hd_number, obj_name, date_obs, resolution = self.data_processor.process_file(file_name)
+                self.wavelength = wavelength
+                self.spectrum = spectrum
                 self.hd_number = hd_number
                 self.resolution = resolution
                 self.plot_spectrum(wavelength, spectrum, title)
@@ -292,31 +303,6 @@ class GraphPage(QWidget):
                 self.graphWidget.removeItem(item)
             self.balmer_lines_items = []
 
-    # def toggle_hd_spectrum_hr(self):
-    #     if not self.hd_number:
-    #         QMessageBox.critical(self, "Erreur", "Numéro HD non trouvé dans le fichier FITS.")
-    #         return
-
-    #     if self.hd_spectrum_hr_action.isChecked():
-    #         wavelengths, intensities = self.data_processor.plot_melchiors_HR(self.hd_number)
-    #         self.hd_spectrum_item = self.graphWidget.plot(wavelengths, intensities, pen=pg.mkPen('r', style=Qt.DashLine))
-    #     else:
-    #         if self.hd_spectrum_item:
-    #             self.graphWidget.removeItem(self.hd_spectrum_item)
-    #             self.hd_spectrum_item = None
-
-    # def toggle_hd_spectrum_br(self):
-    #     if not self.hd_number:
-    #         QMessageBox.critical(self, "Erreur", "Numéro HD non trouvé dans le fichier FITS.")
-    #         return
-
-    #     if self.hd_spectrum_br_action.isChecked():
-    #         wavelengths, intensities = self.data_processor.plot_melchiors_BR(self.hd_number)
-    #         self.hd_spectrum_item = self.graphWidget.plot(wavelengths, intensities, pen=pg.mkPen('r', style=Qt.DashLine))
-    #     else:
-    #         if self.hd_spectrum_item:
-    #             self.graphWidget.removeItem(self.hd_spectrum_item)
-    #             self.hd_spectrum_item = None
 
     def toggle_melchiors_spectrum(self):
         if not self.hd_number:
@@ -340,8 +326,54 @@ class GraphPage(QWidget):
 
     def toggle_remove_atmo(self):
         if self.remove_atmo_action.isChecked():
-            # Logic for removing atmospheric lines goes here
-            pass
+            if not hasattr(self, 'wavelength') or not hasattr(self, 'spectrum'):
+                QMessageBox.critical(self, "Erreur", "Veuillez d'abord ouvrir un fichier FITS.")
+                self.remove_atmo_action.setChecked(False)
+                return
+            x = np.array(self.wavelength)
+            y = np.array(self.spectrum)
+            cleaned_wavelength, cleaned_spectrum,bkg = self.data_processor.remove_atmospheric_lines(x,y)
+
+            # Plot the cleaned spectrum
+            self.plot_spectrum(cleaned_wavelength, cleaned_spectrum, "Spectre sans raies atmosphériques")
+
+            self.cleaned_wavelength = cleaned_wavelength
+            self.cleaned_spectrum = cleaned_spectrum
+            self.bkg = bkg
+
+        else:
+            if hasattr(self, 'wavelength') and hasattr(self, 'spectrum'):
+                self.plot_spectrum(self.wavelength, self.spectrum, "Spectre original")
+
+    def toggle_show_both_spectra(self):
+            if self.show_both_spectra_action.isChecked():
+                if hasattr(self, 'cleaned_wavelength') and hasattr(self, 'cleaned_spectrum'):
+                    self.graphWidget.clear()
+                    self.graphWidget.plot(self.cleaned_wavelength, self.cleaned_spectrum, pen='k', name="Spectre sans raies atmosphériques")
+                    self.graphWidget.plot(self.wavelength, self.spectrum, pen=pg.mkPen('b', style=Qt.DashLine),name="Spectre original")
+            else:
+                if hasattr(self, 'wavelength') and hasattr(self, 'spectrum'):
+                    self.plot_spectrum(self.wavelength, self.spectrum, "Spectre original")
+
+    def toggle_show_baseline(self):
+        if self.show_baseline_action.isChecked():
+            self.graphWidget.plot(self.wavelength, self.bkg, pen=pg.mkPen('g', style=Qt.DashLine), name="Ligne de base")
+        else:
+            self.plot_spectrum(self.wavelength, self.spectrum, "Spectre original")
+
+    def toggle_show_telluric_lines(self):
+        if self.show_telluric_lines_action.isChecked():
+            self.telluric_lines_items = []
+            for line in self.telluric_lines:
+                infinite_line = pg.InfiniteLine(pos=line, angle=90, pen=pg.mkPen('b', style=Qt.DashLine))
+                self.graphWidget.addItem(infinite_line)
+                self.telluric_lines_items.append(infinite_line)
+        else:
+            for item in self.telluric_lines_items:
+                self.graphWidget.removeItem(item)
+            self.telluric_lines_items = []
+
+
     
 class ComparaisonPage(QWidget):
     def __init__(self):
@@ -383,18 +415,13 @@ class ComparaisonPage(QWidget):
 
         self.remove_atmo_action = options_menu.addAction("Retirer les raies atmos")
         self.remove_atmo_action.setCheckable(True)
-        #self.remove_atmo_action.triggered.connect(self.remove_atmo_action)
+        self.remove_atmo_action.triggered.connect(self.toggle_remove_atmo)
 
 
 
         # Ajouter la barre de menu au layout principal
         main_layout.setMenuBar(self.menu_bar)
 
-
-        # self.openFilesButton = QPushButton("Ouvrir un/des fichiers FITS 1D")
-        # self.openFilesButton.setIcon(QIcon("icons/open_file.png"))
-        # self.openFilesButton.clicked.connect(self.open_files)
-        # main_layout.addWidget(self.openFilesButton)
 
         self.splitter = QSplitter(Qt.Horizontal)
         main_layout.addWidget(self.splitter, 1)
@@ -406,18 +433,6 @@ class ComparaisonPage(QWidget):
         side_layout = QVBoxLayout()
         side_widget.setLayout(side_layout)
         self.splitter.addWidget(side_widget)
-
-        # self.bg_color_button = QPushButton("Choisir couleur de fond")
-        # side_layout.addWidget(self.bg_color_button)
-        # self.bg_color_button.clicked.connect(self.choose_background_color)
-
-        # self.axis_color_button = QPushButton("Choisir couleur des axes")
-        # side_layout.addWidget(self.axis_color_button)
-        # self.axis_color_button.clicked.connect(self.choose_axis_color)
-
-        # self.line_thickness_button = QPushButton("Choisir épaisseur des traits")
-        # side_layout.addWidget(self.line_thickness_button)
-        # self.line_thickness_button.clicked.connect(self.choose_line_thickness)
 
         self.graph_comp_Widget.setBackground("w")
         self.axis_pen_color = "k"
@@ -470,6 +485,8 @@ class ComparaisonPage(QWidget):
             for i, file_name in enumerate(file_names):
                 try:
                     wavelength, spectrum, title, hd_number,obj_name, date_obs, resolution = self.data_processor.process_file(file_name)
+                    self.wavelength = wavelength
+                    self.spectrum = spectrum
                     color = self.colors[i % len(self.colors)]
                     self.plot_spectrum(wavelength, spectrum, color, obj_name, date_obs)
                 except Exception as e:
@@ -478,10 +495,55 @@ class ComparaisonPage(QWidget):
     def plot_spectrum(self, wavelength, spectrum, color, obj_name, date_obs):
         wavelength = np.asarray(wavelength)
         spectrum = np.asarray(spectrum)
-        spectrum = self.data_processor.remove_atmospheric_lines(wavelength, spectrum)
         plot_item = self.graph_comp_Widget.plot(wavelength, spectrum, pen=pg.mkPen(color, width=self.line_thickness), name=obj_name + "_" + date_obs)
-
         self.plots.append((plot_item, color))
         self.graph_comp_Widget.setLabel("left", "Intensité")
         self.graph_comp_Widget.setLabel("bottom", 'Longueur d\'onde [Å]')
 
+    def toggle_remove_atmo(self):
+        if self.remove_atmo_action.isChecked():
+            if not self.plots:
+                QMessageBox.critical(self, "Erreur", "Veuillez d'abord ouvrir un ou plusieurs fichiers FITS.")
+                self.remove_atmo_action.setChecked(False)
+                return
+
+            # Conserver une copie des spectres originaux
+            self.original_plots = list(self.plots)
+            
+            self.graph_comp_Widget.clear()
+            self.plots.clear()
+
+            for plot_item, color in self.original_plots:
+                try:
+                    x = plot_item.getData()[0]  # Extraction des longueurs d'onde
+                    y = plot_item.getData()[1]  # Extraction des spectres
+                    
+                    # Suppression des raies atmosphériques
+                    cleaned_wavelength, cleaned_spectrum, bkg = self.data_processor.remove_atmospheric_lines(x, y)
+
+                    # Affichage du spectre nettoyé
+                    cleaned_plot = self.graph_comp_Widget.plot(cleaned_wavelength, cleaned_spectrum, pen=pg.mkPen(color, width=self.line_thickness), name="Spectre sans raies atmosphériques")
+                    self.plots.append((cleaned_plot, color))
+
+                except Exception as e:
+                    QMessageBox.critical(self, "Erreur", f"Erreur lors du traitement des raies atmosphériques: {str(e)}")
+                    self.remove_atmo_action.setChecked(False)
+                    return
+
+        else:
+            if not hasattr(self, 'original_plots'):
+                QMessageBox.critical(self, "Erreur", "Aucune donnée d'origine n'est disponible.")
+                self.remove_atmo_action.setChecked(False)
+                return
+
+            self.graph_comp_Widget.clear()
+            self.plots.clear()
+
+            # Réafficher les spectres originaux
+            for plot_item, color in self.original_plots:
+                x = plot_item.getData()[0]
+                y = plot_item.getData()[1]
+                original_plot = self.graph_comp_Widget.plot(x, y, pen=pg.mkPen(color, width=self.line_thickness), name="Spectre original")
+                self.plots.append((original_plot, color))
+            
+            del self.original_plots  # Nettoyer les spectres originaux pour éviter des incohérences futures
