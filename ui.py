@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (QMainWindow, QPushButton, QVBoxLayout, QHBoxLayou
                                QTableWidget, QTableWidgetItem, QSplitter,QCheckBox, QHeaderView,QColorDialog, 
                                QInputDialog,QMenuBar,QMenu, QDialog, QCalendarWidget,QScrollArea)
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtGui import QColor
 import pyqtgraph as pg
 from data_processing import DataProcessor
 from image_analysis import ImageProcessor
@@ -619,7 +619,9 @@ class BDDPage(QWidget):
         right_layout = QVBoxLayout(right_widget)
 
         self.table = QTableWidget()
-        self.load_data_to_table()
+        self.table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)  # Toujours afficher la barre de défilement verticale
+        self.table.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)  # Afficher la barre de défilement horizontale si nécessaire
+
         right_layout.addWidget(self.table)
 
         # Ajouter le widget droit au splitter
@@ -627,29 +629,42 @@ class BDDPage(QWidget):
 
         splitter.setSizes([150, 400])  # Taille initiale des panneaux
 
+        # Charger les données dans le tableau
+        self.load_data_to_table()
+
     def load_data_to_table(self):
-        # Charger les données des étoiles Be
+        
         df = bess_request()
 
         # Configurer le tableau
-        self.table.setRowCount(df.shape[0])
-        self.table.setColumnCount(df.shape[1])
-        self.table.setHorizontalHeaderLabels(df.columns)
+        self.table.setRowCount(len(df))  # Définir le nombre de lignes total en fonction du DataFrame
+        self.table.setColumnCount(len(df.columns) - 1)  # Ne pas inclure la colonne "bgcolor"
+        self.table.setHorizontalHeaderLabels(df.columns.drop('bgcolor'))
 
-        # Remplir le tableau avec les données du dataframe
-        for i in range(df.shape[0]):
-            for j in range(df.shape[1]):
-                self.table.setItem(i, j, QTableWidgetItem(str(df.iat[i, j])))
+        # Remplir le tableau avec les données du DataFrame
+        for i in range(len(df)):
+            for j, col in enumerate(df.columns.drop('bgcolor')):  # Exclure la colonne "bgcolor"
+                item = QTableWidgetItem(str(df.iloc[i][col]))
+                if col == 'date':
+                    # Appliquer le code couleur à la cellule de la colonne "date"
+                    color = df.iloc[i]['bgcolor']
+                    if color:
+                        item.setBackground(QColor(color))
+                self.table.setItem(i, j, item)
+
+        # Limiter la hauteur du tableau pour n'afficher que 20 lignes à la fois
+        row_height = self.table.rowHeight(0)
+        header_height = self.table.horizontalHeader().height()
+        self.table.setFixedHeight(row_height * 20 + header_height)
 
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
+
     def choose_location(self):
-        # Implémenter la logique pour choisir un lieu via Google Maps (ou autre API)
         print("Choisir un lieu via Google Maps")
 
     def choose_date(self):
-        # Ouvrir une boîte de dialogue de calendrier pour choisir une date
         dialog = QDialog(self)
         dialog.setWindowTitle("Choisir une date")
 
@@ -659,7 +674,6 @@ class BDDPage(QWidget):
 
         layout = QVBoxLayout(dialog)
         layout.addWidget(calendar)
-
         dialog.exec_()
 
     def on_date_selected(self, dialog, date):
@@ -667,8 +681,7 @@ class BDDPage(QWidget):
         dialog.accept()
 
     def get_constellation_list(self):
-        # Liste des constellations (exemple simplifié)
-        constellations = [
+        constellations =  [
             "Andromeda", "Antlia", "Apus", "Aquarius", "Aquila", "Ara", "Aries", "Auriga",
             "Bootes", "Caelum", "Camelopardalis", "Cancer", "Canes Venatici", "Canis Major",
             "Canis Minor", "Capricornus", "Carina", "Cassiopeia", "Centaurus", "Cepheus",
@@ -686,19 +699,17 @@ class BDDPage(QWidget):
         return constellations
 
     def choose_constellations(self):
-        # Boîte de dialogue pour choisir les constellations
         dialog = QDialog(self)
         dialog.setWindowTitle("Choisir les constellations")
 
         layout = QVBoxLayout(dialog)
-        
-        # Scroll Area to contain the constellation checkboxes
+
         scroll_area = QScrollArea(dialog)
         scroll_area.setWidgetResizable(True)
-        
+
         scroll_content = QWidget()
         scroll_layout = QVBoxLayout(scroll_content)
-        
+
         constellations = self.get_constellation_list()
         self.checkboxes = []
 
@@ -709,7 +720,7 @@ class BDDPage(QWidget):
 
         scroll_content.setLayout(scroll_layout)
         scroll_area.setWidget(scroll_content)
-        
+
         layout.addWidget(scroll_area)
 
         ok_button = QPushButton("OK")
