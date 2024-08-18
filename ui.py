@@ -1,12 +1,15 @@
 import numpy as np
 from PySide6.QtWidgets import (QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QWidget,
                                QFileDialog, QMessageBox, QLabel, QStackedWidget, 
-                               QTableWidget, QTableWidgetItem, QSplitter,QCheckBox, QHeaderView,QColorDialog, QInputDialog,QMenuBar,QMenu)
+                               QTableWidget, QTableWidgetItem, QSplitter,QCheckBox, QHeaderView,QColorDialog, 
+                               QInputDialog,QMenuBar,QMenu, QDialog, QCalendarWidget,QScrollArea)
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon, QPixmap
 import pyqtgraph as pg
 from data_processing import DataProcessor
 from image_analysis import ImageProcessor
+from bdd_processing import bess_request
+import datetime
 
 
 class MainWindow(QMainWindow):
@@ -40,6 +43,11 @@ class MainWindow(QMainWindow):
         self.comparaisonButton = QPushButton("Comparaison")
         self.comparaisonButton.clicked.connect(self.show_comparaison_page)
         self.menu_layout.addWidget(self.comparaisonButton)
+
+        self.bddButton = QPushButton("Base de Données")
+        self.bddButton.clicked.connect(self.show_bdd_page)
+        self.menu_layout.addWidget(self.bddButton)
+
 
         # Créer le QStackedWidget pour changer de pages
         self.stacked_widget = QStackedWidget()
@@ -93,6 +101,15 @@ class MainWindow(QMainWindow):
         btn_layout.addWidget(quick_compare_btn)
         home_layout.addLayout(btn_layout)
 
+
+        quick_bdd_btn = QPushButton("Base de Données")
+        quick_bdd_btn.setFixedSize(120, 120)
+        quick_bdd_btn.setStyleSheet("border-radius: 50px; background-color: #4CAF50; color: white; font-size: 14px;")
+        quick_bdd_btn.clicked.connect(self.show_bdd_page)
+        btn_layout.addWidget(quick_bdd_btn)
+        home_layout.addLayout(btn_layout)
+
+
         # Ajouter des informations sur la version et l'auteur
         footer = QLabel("Version 0.1 - Développé par V. Lecocq")
         footer.setAlignment(Qt.AlignCenter)
@@ -113,6 +130,12 @@ class MainWindow(QMainWindow):
         self.comparaison_page = ComparaisonPage()
         self.stacked_widget.addWidget(self.comparaison_page)
 
+        # Page de comparaison
+        self.bdd_page = BDDPage()
+        self.stacked_widget.addWidget(self.bdd_page)
+
+
+
         self.show_home()
 
     def show_home(self):
@@ -127,6 +150,8 @@ class MainWindow(QMainWindow):
     def show_comparaison_page(self):
         self.stacked_widget.setCurrentWidget(self.comparaison_page)
 
+    def show_bdd_page(self):
+        self.stacked_widget.setCurrentWidget(self.bdd_page)
 
 
 class ImagePage(QWidget):
@@ -547,3 +572,156 @@ class ComparaisonPage(QWidget):
                 self.plots.append((original_plot, color))
             
             del self.original_plots  # Nettoyer les spectres originaux pour éviter des incohérences futures
+
+
+class BDDPage(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        # Créer le layout principal
+        main_layout = QHBoxLayout(self)
+
+        # Créer le QSplitter avec un trait vertical
+        splitter = QSplitter(Qt.Horizontal)
+        splitter.setStyleSheet("QSplitter::handle { background-color: lightgray; width: 2px; }")
+        main_layout.addWidget(splitter)
+
+        # Créer la section gauche avec les boutons et le label
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+
+        # Bouton pour choisir un lieu
+        self.location_button = QPushButton("Choisir un lieu")
+        self.location_button.clicked.connect(self.choose_location)
+        left_layout.addWidget(self.location_button)
+
+        # Bouton pour choisir une date avec un calendrier
+        self.calendar_button = QPushButton("Choisir une date")
+        self.calendar_button.clicked.connect(self.choose_date)
+        left_layout.addWidget(self.calendar_button)
+
+        # Bouton pour ouvrir la sélection des constellations
+        self.constellation_button = QPushButton("Choisir les constellations")
+        self.constellation_button.clicked.connect(self.choose_constellations)
+        left_layout.addWidget(self.constellation_button)
+
+        # Label pour afficher les constellations sélectionnées
+        self.selected_constellations_label = QLabel("Constellations sélectionnées: Aucun")
+        left_layout.addWidget(self.selected_constellations_label)
+
+        left_layout.addStretch()
+
+        # Ajouter le widget gauche au splitter
+        splitter.addWidget(left_widget)
+
+        # Créer la section droite avec le tableau
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+
+        self.table = QTableWidget()
+        self.load_data_to_table()
+        right_layout.addWidget(self.table)
+
+        # Ajouter le widget droit au splitter
+        splitter.addWidget(right_widget)
+
+        splitter.setSizes([150, 400])  # Taille initiale des panneaux
+
+    def load_data_to_table(self):
+        # Charger les données des étoiles Be
+        df = bess_request()
+
+        # Configurer le tableau
+        self.table.setRowCount(df.shape[0])
+        self.table.setColumnCount(df.shape[1])
+        self.table.setHorizontalHeaderLabels(df.columns)
+
+        # Remplir le tableau avec les données du dataframe
+        for i in range(df.shape[0]):
+            for j in range(df.shape[1]):
+                self.table.setItem(i, j, QTableWidgetItem(str(df.iat[i, j])))
+
+        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+    def choose_location(self):
+        # Implémenter la logique pour choisir un lieu via Google Maps (ou autre API)
+        print("Choisir un lieu via Google Maps")
+
+    def choose_date(self):
+        # Ouvrir une boîte de dialogue de calendrier pour choisir une date
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Choisir une date")
+
+        calendar = QCalendarWidget(dialog)
+        calendar.setGridVisible(True)
+        calendar.clicked.connect(lambda date: self.on_date_selected(dialog, date))
+
+        layout = QVBoxLayout(dialog)
+        layout.addWidget(calendar)
+
+        dialog.exec_()
+
+    def on_date_selected(self, dialog, date):
+        print(f"Date choisie: {date.toString(Qt.ISODate)}")
+        dialog.accept()
+
+    def get_constellation_list(self):
+        # Liste des constellations (exemple simplifié)
+        constellations = [
+            "Andromeda", "Antlia", "Apus", "Aquarius", "Aquila", "Ara", "Aries", "Auriga",
+            "Bootes", "Caelum", "Camelopardalis", "Cancer", "Canes Venatici", "Canis Major",
+            "Canis Minor", "Capricornus", "Carina", "Cassiopeia", "Centaurus", "Cepheus",
+            "Cetus", "Chamaeleon", "Circinus", "Columba", "Coma Berenices", "Corona Australis",
+            "Corona Borealis", "Corvus", "Crater", "Crux", "Cygnus", "Delphinus", "Dorado",
+            "Draco", "Equuleus", "Eridanus", "Fornax", "Gemini", "Grus", "Hercules", "Horologium",
+            "Hydra", "Hydrus", "Indus", "Lacerta", "Leo", "Leo Minor", "Lepus", "Libra",
+            "Lupus", "Lynx", "Lyra", "Mensa", "Microscopium", "Monoceros", "Musca", "Norma",
+            "Octans", "Ophiuchus", "Orion", "Pavo", "Pegasus", "Perseus", "Phoenix", "Pictor",
+            "Pisces", "Piscis Austrinus", "Puppis", "Pyxis", "Reticulum", "Sagitta", "Sagittarius",
+            "Scorpius", "Sculptor", "Scutum", "Serpens", "Sextans", "Taurus", "Telescopium",
+            "Triangulum", "Triangulum Australe", "Tucana", "Ursa Major", "Ursa Minor", "Vela",
+            "Virgo", "Volans", "Vulpecula"
+        ]
+        return constellations
+
+    def choose_constellations(self):
+        # Boîte de dialogue pour choisir les constellations
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Choisir les constellations")
+
+        layout = QVBoxLayout(dialog)
+        
+        # Scroll Area to contain the constellation checkboxes
+        scroll_area = QScrollArea(dialog)
+        scroll_area.setWidgetResizable(True)
+        
+        scroll_content = QWidget()
+        scroll_layout = QVBoxLayout(scroll_content)
+        
+        constellations = self.get_constellation_list()
+        self.checkboxes = []
+
+        for constellation in constellations:
+            checkbox = QCheckBox(constellation)
+            scroll_layout.addWidget(checkbox)
+            self.checkboxes.append(checkbox)
+
+        scroll_content.setLayout(scroll_layout)
+        scroll_area.setWidget(scroll_content)
+        
+        layout.addWidget(scroll_area)
+
+        ok_button = QPushButton("OK")
+        ok_button.clicked.connect(lambda: self.on_constellations_selected(dialog))
+        layout.addWidget(ok_button)
+
+        dialog.exec_()
+
+    def on_constellations_selected(self, dialog):
+        selected_constellations = [cb.text() for cb in self.checkboxes if cb.isChecked()]
+        if selected_constellations:
+            self.selected_constellations_label.setText("Constellations sélectionnées: " + ", ".join(selected_constellations))
+        else:
+            self.selected_constellations_label.setText("Constellations sélectionnées: Aucun")
+        dialog.accept()
